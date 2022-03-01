@@ -1,29 +1,37 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserModel } from './interface/users.interface';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { UserModel } from "./interface/users.interface";
+import { v1 as uuidv1 } from "uuid";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
 
 @Injectable()
 export class UsersService {
-    private users: Array<UserModel> = []; 
+	private users: Array<UserModel> = [];
 
-    public findAll(): Array<UserModel> {
-        return this.users; 
-    }
+	constructor(@InjectModel("Users") private readonly usersModel: Model<UserModel>) {}
 
-    public findOne(id: string): UserModel {
-        const user: UserModel = this.users.find( user => user.user_id === id);
+	async findAll(): Promise<UserModel[]> {
+		return await this.usersModel.find().exec();
+	}
 
-        if (!user){
-            throw new NotFoundException("User not found");
-        }
+	async findOne(id: string): Promise<UserModel> {
+		const user: UserModel = await this.usersModel.findById(id).exec();
 
-        return user;
-    }
+		if (!user) {
+			throw new NotFoundException("User not found");
+		}
 
-    public create(user: UserModel): UserModel {
-        this.users.push(user);
-        return user;
-    }
+		return user;
+	}
 
-
+	async create(user): Promise<UserModel> {
+		const newUser = new this.usersModel({
+			user_id: "user_" + uuidv1(),
+			created_at: new Date().toISOString(),
+			...user,
+		});
+		const result = await newUser.save();
+		console.log(result);
+		return result;
+	}
 }
