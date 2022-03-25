@@ -3,20 +3,24 @@ import { UserModel } from "./interface/users.interface";
 import { v1 as uuidv1 } from "uuid";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import { createUserDto } from "./dto/createUserDto.dto";
 
 @Injectable()
 export class UsersService {
 	private users: Array<UserModel> = [];
 
-	constructor(@InjectModel("Users") private readonly usersModel: Model<UserModel>) {}
+	constructor(@InjectModel("Users") private usersModel: Model<UserModel>) {}
 
-	async findAll(): Promise<UserModel[]> {
-		return await this.usersModel.find().exec();
+	async findAllUser(): Promise<UserModel[]> {
+		const users = await this.usersModel.find().exec();
+		if (!users) {
+			throw new NotFoundException("Users not found");
+		}
+		return users;
 	}
 
-	async findOne(id: string): Promise<UserModel> {
-		const user: UserModel = await this.usersModel.findById(id).exec();
-
+	async findOneUser(user_id: string): Promise<UserModel> {
+		const user: UserModel = await this.usersModel.findOne({ user_id: user_id }).exec();
 		if (!user) {
 			throw new NotFoundException("User not found");
 		}
@@ -24,14 +28,31 @@ export class UsersService {
 		return user;
 	}
 
-	async create(user): Promise<UserModel> {
+	async createUser(user: createUserDto): Promise<UserModel> {
 		const newUser = new this.usersModel({
 			user_id: "user_" + uuidv1(),
 			created_at: new Date().toISOString(),
 			...user,
 		});
 		const result = await newUser.save();
-		console.log(result);
+
 		return result;
+	}
+
+	async updateUser(user_id: string, user: createUserDto): Promise<UserModel> {
+		const result = await this.usersModel.updateOne({ user_id: user_id }, user).exec();
+		if (!result) {
+			throw new NotFoundException(`User ${user_id} not found`);
+		}
+		const userUpdated: UserModel = await this.usersModel.findOne({ user_id: user_id }).exec();
+		return userUpdated;
+	}
+
+	async deleteUser(user_id: string): Promise<string> {
+		const result = await this.usersModel.deleteOne({ user_id: user_id }).exec();
+		if (!result) {
+			throw new NotFoundException(`User ${user_id} not found`);
+		}
+		return `User ${user_id} has been deleted`;
 	}
 }
