@@ -5,11 +5,30 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { createUserDto } from "./dto/createUserDto.dto";
 
+export type User = any;
+
 @Injectable()
 export class UsersService {
 	private users: Array<UserModel> = [];
 
+	private readonly test = [
+		{
+			userId: 1,
+			username: "john",
+			password: "changeme",
+		},
+		{
+			userId: 2,
+			username: "maria",
+			password: "guess",
+		},
+	];
+
 	constructor(@InjectModel("Users") private usersModel: Model<UserModel>) {}
+
+	async findUserTest(username: string): Promise<any | User> {
+		return this.test.find((user) => user.username === username);
+	}
 
 	async findAllUser(): Promise<UserModel[]> {
 		const users = await this.usersModel.find().exec();
